@@ -6,6 +6,7 @@ pipeline {
         properties = null
         docker_port = 7100
         username = 'bhardwajakash'
+		container_exist = "${bat(script:'docker ps -q -f name=consolecoreapp', returnStdout: true).trim().readLines().drop(1).join("")}"
     }
     stages {
         stage ('Clean workspace') {
@@ -46,8 +47,15 @@ pipeline {
         }
         stage('Docker Deployment'){
             steps{
-                echo "Docker deployment"
-                bat "docker run --name ConsoleCoreApp -d -p 7100:80 ${registry}:${BUILD_NUMBER}"
+                script {
+                    echo "ConsoleCoreApp container already exist with container id = ${env.container_exist}"
+                    if (env.container_exist != null) {
+                        echo "Deleting existing ConsoleCoreApp container"
+                        bat "docker stop ConsoleCoreApp && docker rm ConsoleCoreApp"
+                    }
+                    echo "Docker Deployment"
+                    bat "docker run --name ConsoleCoreApp -d -p 7100:80 ${registry}:${BUILD_NUMBER}"
+                }
             }
         }
     }
